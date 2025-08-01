@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎬 Babbl Labs - Async Video Intelligence</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #3b82f6, #1e40af);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+        
+        .kafka-badge {
+            background: #16a34a;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            margin-top: 10px;
+            display: inline-block;
+        }
+        
+        .main-content {
+            padding: 40px;
+        }
+        
+        .input-section {
+            margin-bottom: 40px;
+        }
+        
+        .input-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #374151;
+        }
+        
+        input[type="url"], select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        input[type="url"]:focus, select:focus {
+            outline: none;
+            border-color: #3b82f6;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 16px;
+        }
+        
+        .btn-primary {
+            background: #3b82f6;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #2563eb;
+            transform: translateY(-2px);
+        }
+        
+        .btn-secondary {
+            background: #6b7280;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #4b5563;
+        }
+        
+        .btn-search {
+            background: #10b981;
+            color: white;
+        }
+        
+        .btn-kafka {
+            background: #f59e0b;
+            color: white;
+        }
+        
+        .job-status {
+            background: #f0f9ff;
+            border: 2px solid #0ea5e9;
+            border-radius: 12px;
+            padding: 24px;
+            margin: 20px 0;
+            display: none;
+        }
+        
+        .job-status.active {
+            display: block;
+        }
+        
+        .status-queued {
+            background: #fef3c7;
+            border-color: #f59e0b;
+        }
+        
+        .status-processing {
+            background: #ede9fe;
+            border-color: #8b5cf6;
+        }
+        
+        .status-completed {
+            background: #dcfce7;
+            border-color: #16a34a;
+        }
+        
+        .status-failed {
+            background: #fee2e2;
+            border-color: #ef4444;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e5e7eb;
+            border-radius: 4px;
+            margin: 16px 0;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: #3b82f6;
+            border-radius: 4px;
+            transition: width 0.3s ease;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        .results {
+            display: none;
+            margin-top: 40px;
+        }
+        
+        .analysis-card {
+            background: #f8fafc;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+        
+        .analysis-card h3 {
+            color: #1f2937;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .analysis-content {
+            color: #4b5563;
+            line-height: 1.6;
+            white-space: pre-wrap;
+        }
+        
+        .metadata {
+            background: #fef3c7;
+            border: 1px solid #f59e0b;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 20px;
+        }
+        
+        .metadata h4 {
+            color: #92400e;
+            margin-bottom: 8px;
+        }
+        
+        .tabs {
+            display: flex;
+            border-bottom: 2px solid #e5e7eb;
+            margin-bottom: 20px;
+        }
+        
+        .tab {
+            padding: 12px 24px;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.3s;
+        }
+        
+        .tab.active {
+            border-bottom-color: #3b82f6;
+            color: #3b82f6;
+            font-weight: 600;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .queue-status {
+            background: #f0fdf4;
+            border: 1px solid #16a34a;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 20px 0;
+        }
+        
+        .error {
+            background: #fee2e2;
+            border: 1px solid #ef4444;
+            border-radius: 8px;
+            padding: 16px;
+            color: #dc2626;
+            margin-top: 20px;
+        }
+        
+        .success {
+            background: #dcfce7;
+            border: 1px solid #16a34a;
+            border-radius: 8px;
+            padding: 16px;
+            color: #15803d;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎬 Babbl Labs</h1>
+            <p>Async Video Intelligence with Kafka Processing</p>
+            <div class="kafka-badge">✅ Kafka Integration Enabled</div>
+        </div>
+        
+        <div class="main-content">
+            <div class="input-section">
+                <div class="input-group">
+                    <label for="youtube-url">YouTube Video URL</label>
+                    <input 
+                        type="url" 
+                        id="youtube-url" 
+                        placeholder="https://www.youtube.com/watch?v=VIDEO_ID"
+                        value="https://www.youtube.com/watch?v=0X0Jm8QValY"
+                    >
+                </div>
+                
+                <div class="input-group">
+                    <label for="priority">Processing Priority (Kafka Topic)</label>
+                    <select id="priority">
+                        <option value="normal">Normal Priority (video-analysis-normal)</option>
+                        <option value="high">High Priority (video-analysis-high)</option>
+                        <option value="Urgent">Urgent (video-analysis-Urgent)</option>
+                    </select>
+                </div>
+                
+                <div class="button-group">
+                    <button class="btn-primary" onclick="submitToKafka()">📤 Submit to Kafka Queue</button>
+                    <button class="btn-secondary" onclick="checkHealth()">🏥 Health Check</button>
+                    <button class="btn-kafka" onclick="getQueueStatus()">📊 Queue Status</button>
+                    <button class="btn-secondary" onclick="getActiveJobs()">📋 Active Jobs</button>
+                </div>
+            </div>
+            
+            <div class="job-status" id="job-status">
+                <h3 id="job-title">📋 Job Status</h3>
+                <p><strong>Job ID:</strong> <span id="job-id">-</span></p>
+                <p><strong>Video ID:</strong> <span id="video-id">-</span></p>
+                <p><strong>Status:</strong> <span id="status">-</span></p>
+                <p><strong>Queue Position:</strong> <span id="queue-position">-</span></p>
+                <p><strong>Estimated Completion:</strong> <span id="estimated-completion">-</span></p>
+                
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
+                </div>
+                
+                <div class="button-group" style="margin-top: 16px;">
+                    <button class="btn-secondary" onclick="checkJobStatus()">🔄 Refresh Status</button>
+                    <button class="btn-secondary" onclick="cancelPolling()">⏸️ Stop Polling</button>
+                </div>
+            </div>
+            
+            <div class="results" id="results">
+                <div class="metadata" id="metadata"></div>
+                
+                <div class="tabs">
+                    <div class="tab active" onclick="showTab('business')">📊 Business Intelligence</div>
+                    <div class="tab" onclick="showTab('entities')">🏢 Entities & Sentiment</div>
+                    <div class="tab" onclick="showTab('competitive')">⚔️ Competitive Intel</div>
+                    <div class="tab" onclick="showTab('financial')">💰 Financial Analysis</div>
+                </div>
+                
+                <div class="tab-content active" id="business-tab">
+                    <div class="analysis-card">
+                        <h3>📊 Business Intelligence Analysis</h3>
+                        <div class="analysis-content" id="business-content"></div>
+                    </div>
+                </div>
+                
+                <div class="tab-content" id="entities-tab">
+                    <div class="analysis-card">
+                        <h3>🏢 Entity Analysis & Sentiment</h3>
+                        <div class="analysis-content" id="entities-content"></div>
+                    </div>
+                </div>
+                
+                <div class="tab-content" id="competitive-tab">
+                    <div class="analysis-card">
+                        <h3>⚔️ Competitive Intelligence</h3>
+                        <div class="analysis-content" id="competitive-content"></div>
+                    </div>
+                </div>
+                
+                <div class="tab-content" id="financial-tab">
+                    <div class="analysis-card">
+                        <h3>💰 Financial Implications</h3>
+                        <div class="analysis-content" id="financial-content"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+            // Fixed Frontend JavaScript for Babbl Labs
+            // Better error handling and status polling
+
+            const API_BASE = 'http://localhost:8080';
+            let currentJobId = null;
+            let pollingInterval = null;
+
+            // Submit video to Kafka queue - FIXED
+            async function submitToKafka() {
+                const url = document.getElementById('youtube-url').value;
+                const priority = document.getElementById('priority').value;
+                
+                if (!url) {
+                    showMessage('Please enter a YouTube URL', 'error');
+                    return;
+                }
+                
+                try {
+                    showMessage('Submitting job to Kafka queue...', 'success');
+                    
+                    const response = await fetch(`${API_BASE}/analyze`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            youtube_url: url,
+                            priority: priority,
+                            client_id: 'webapp-demo'
+                        })
+                    });
+                    
+                    const responseText = await response.text();
+                    console.log('Raw response:', responseText);
+                    
+                    if (!response.ok) {
+                        let errorDetail = 'Unknown error';
+                        try {
+                            const errorData = JSON.parse(responseText);
+                            errorDetail = errorData.detail || errorData.message || 'Unknown error';
+                        } catch (e) {
+                            errorDetail = responseText || 'Server error';
+                        }
+                        throw new Error(errorDetail);
+                    }
+                    
+                    let data;
+                    try {
+                        data = JSON.parse(responseText);
+                    } catch (e) {
+                        throw new Error('Invalid JSON response from server');
+                    }
+                    
+                    console.log('Parsed response:', data);
+                    
+                    // Show job status
+                    showJobStatus(data);
+                    
+                    // Start polling for updates
+                    currentJobId = data.job_id;
+                    startPolling();
+                    
+                    showMessage(`✅ Job submitted! Job ID: ${data.job_id}`, 'success');
+                    
+                } catch (error) {
+                    console.error('Submission error:', error);
+                    showMessage(`❌ Failed to submit job: ${error.message}`, 'error');
+                }
+            }
+
+            // Show job status section - FIXED
+            function showJobStatus(jobData) {
+                const statusSection = document.getElementById('job-status');
+                statusSection.className = `job-status active status-${jobData.status}`;
+                
+                document.getElementById('job-id').textContent = jobData.job_id || 'Unknown';
+                document.getElementById('video-id').textContent = jobData.video_id || 'Unknown';
+                document.getElementById('status').textContent = jobData.status || 'Unknown';
+                document.getElementById('queue-position').textContent = jobData.queue_position || 'N/A';
+                
+                // Handle estimated completion time
+                if (jobData.estimated_completion) {
+                    try {
+                        const completionTime = new Date(jobData.estimated_completion);
+                        document.getElementById('estimated-completion').textContent = completionTime.toLocaleString();
+                    } catch (e) {
+                        document.getElementById('estimated-completion').textContent = jobData.estimated_completion;
+                    }
+                } else {
+                    document.getElementById('estimated-completion').textContent = 'N/A';
+                }
+                
+                // Update progress bar
+                updateProgressBar(jobData.status);
+            }
+
+            // Start polling for job status - FIXED
+            function startPolling() {
+                if (pollingInterval) {
+                    clearInterval(pollingInterval);
+                }
+                
+                console.log(`Starting polling for job ${currentJobId}`);
+                
+                pollingInterval = setInterval(async () => {
+                    if (currentJobId) {
+                        await checkJobStatus();
+                    }
+                }, 3000); // Poll every 3 seconds
+            }
+
+            // Check job status - FIXED
+            async function checkJobStatus() {
+                if (!currentJobId) {
+                    showMessage('No active job to check', 'error');
+                    return;
+                }
+                
+                try {
+                    console.log(`Checking status for job ${currentJobId}`);
+                    
+                    const response = await fetch(`${API_BASE}/status/${currentJobId}`);
+                    const responseText = await response.text();
+                    
+                    console.log('Status response:', responseText);
+                    
+                    if (!response.ok) {
+                        let errorDetail = 'Failed to get status';
+                        try {
+                            const errorData = JSON.parse(responseText);
+                            errorDetail = errorData.detail || 'Unknown error';
+                        } catch (e) {
+                            errorDetail = `HTTP ${response.status}`;
+                        }
+                        throw new Error(errorDetail);
+                    }
+                    
+                    let data;
+                    try {
+                        data = JSON.parse(responseText);
+                    } catch (e) {
+                        throw new Error('Invalid JSON response');
+                    }
+                    
+                    console.log('Status data:', data);
+                    
+                    // Update status display
+                    document.getElementById('status').textContent = data.status;
+                    updateProgressBar(data.status);
+                    
+                    // Update progress text if available
+                    if (data.progress) {
+                        console.log(`Progress: ${data.progress}`);
+                    }
+                    
+                    // Update job status section class
+                    const statusSection = document.getElementById('job-status');
+                    statusSection.className = `job-status active status-${data.status}`;
+                    
+                    // Handle completion
+                    if (data.status === 'completed') {
+                        if (data.result) {
+                            displayResults(data);
+                            showMessage('✅ Analysis completed!', 'success');
+                        } else {
+                            showMessage('✅ Job completed but no results available', 'success');
+                        }
+                        stopPolling();
+                    }
+                    
+                    // Handle failure
+                    else if (data.status === 'failed') {
+                        const errorMsg = data.error || 'Unknown error';
+                        showMessage(`❌ Analysis failed: ${errorMsg}`, 'error');
+                        stopPolling();
+                    }
+                    
+                    // Handle processing
+                    else if (data.status === 'processing') {
+                        if (data.progress) {
+                            showMessage(`🔄 Processing: ${data.progress}`, 'success');
+                        }
+                    }
+                    
+                } catch (error) {
+                    console.error('Status check error:', error);
+                    showMessage(`❌ Failed to check status: ${error.message}`, 'error');
+                }
+            }
+
+            // Display analysis results - FIXED
+            function displayResults(statusData) {
+                const result = statusData.result;
+                if (!result) {
+                    console.log('No result data available');
+                    return;
+                }
+                
+                console.log('Displaying results:', result);
+                
+                // Show results section
+                document.getElementById('results').style.display = 'block';
+                
+                // Display metadata
+                const metadata = document.getElementById('metadata');
+                metadata.innerHTML = `
+                    <h4>📹 Analysis Complete</h4>
+                    <p><strong>Job ID:</strong> ${statusData.job_id}</p>
+                    <p><strong>Video ID:</strong> ${statusData.video_id}</p>
+                    <p><strong>Processing Time:</strong> ${statusData.processing_time?.toFixed(2) || result.processing_metrics?.total_time?.toFixed(2) || 'N/A'} seconds</p>
+                    <p><strong>Status:</strong> ${statusData.status}</p>
+                    <p><strong>Completed At:</strong> ${new Date(statusData.timestamp).toLocaleString()}</p>
+                `;
+                
+                // FIXED: Handle the correct analysis structure from your consumer
+                if (result.analysis) {
+                    const analysis = result.analysis;
+                    
+                    // Display analysis content with proper handling
+                    document.getElementById('business-content').textContent = 
+                        analysis.business_insights || 'No business insights available';
+                    document.getElementById('entities-content').textContent = 
+                        analysis.entity_analysis || 'No entity analysis available';
+                    document.getElementById('competitive-content').textContent = 
+                        analysis.competitive_intelligence || 'No competitive analysis available';
+                    document.getElementById('financial-content').textContent = 
+                        analysis.financial_implications || 'No financial analysis available';
+                        
+                    console.log('✅ Analysis results displayed successfully');
+                    
+                } else if (result.analysis_results) {
+                    // Fallback for old structure
+                    const analysis = result.analysis_results;
+                    
+                    document.getElementById('business-content').textContent = 
+                        analysis.business_insights || 'No business insights available';
+                    document.getElementById('entities-content').textContent = 
+                        analysis.entity_analysis || 'No entity analysis available';
+                    document.getElementById('competitive-content').textContent = 
+                        analysis.competitive_intelligence || 'No competitive analysis available';
+                    document.getElementById('financial-content').textContent = 
+                        analysis.financial_implications || 'No financial analysis available';
+                        
+                    console.log('✅ Analysis results displayed (legacy structure)');
+                    
+                } else {
+                    // Handle case where analysis structure is unexpected
+                    console.log('⚠️ Analysis structure not recognized:', result);
+                    
+                    // Try to find analysis data anywhere in the result
+                    let foundAnalysis = false;
+                    
+                    // Search for analysis data in various possible locations
+                    const searchKeys = ['business_insights', 'entity_analysis', 'competitive_intelligence', 'financial_implications'];
+                    const analysisData = {};
+                    
+                    function searchObject(obj, path = '') {
+                        for (const [key, value] of Object.entries(obj)) {
+                            if (searchKeys.includes(key) && typeof value === 'string') {
+                                analysisData[key] = value;
+                                foundAnalysis = true;
+                            } else if (typeof value === 'object' && value !== null) {
+                                searchObject(value, path + key + '.');
+                            }
+                        }
+                    }
+                    
+                    searchObject(result);
+                    
+                    if (foundAnalysis) {
+                        document.getElementById('business-content').textContent = 
+                            analysisData.business_insights || 'No business insights found';
+                        document.getElementById('entities-content').textContent = 
+                            analysisData.entity_analysis || 'No entity analysis found';
+                        document.getElementById('competitive-content').textContent = 
+                            analysisData.competitive_intelligence || 'No competitive analysis found';
+                        document.getElementById('financial-content').textContent = 
+                            analysisData.financial_implications || 'No financial analysis found';
+                            
+                        console.log('✅ Found analysis data through deep search');
+                    } else {
+                        // Show raw result structure for debugging
+                        const debugInfo = `
+                            Data structure received:
+                            ${JSON.stringify(result, null, 2)}
+                            
+                            Please check the consumer output format.
+                        `;
+                        
+                        document.getElementById('business-content').textContent = debugInfo;
+                        document.getElementById('entities-content').textContent = 'Debug: See Business Intelligence tab';
+                        document.getElementById('competitive-content').textContent = 'Debug: See Business Intelligence tab';
+                        document.getElementById('financial-content').textContent = 'Debug: See Business Intelligence tab';
+                        
+                        console.log('❌ No analysis data found, showing debug info');
+                    }
+                }
+            }
+
+
+            // Stop polling - FIXED
+            function cancelPolling() {
+                stopPolling();
+                showMessage('⏸️ Status polling stopped', 'success');
+            }
+
+            function stopPolling() {
+                if (pollingInterval) {
+                    clearInterval(pollingInterval);
+                    pollingInterval = null;
+                    console.log('Polling stopped');
+                }
+            }
+
+            // Update progress bar - FIXED
+            function updateProgressBar(status) {
+                const progressFill = document.getElementById('progress-fill');
+                
+                switch(status) {
+                    case 'queued':
+                        progressFill.style.width = '25%';
+                        progressFill.style.background = '#f59e0b';
+                        break;
+                    case 'processing':
+                        progressFill.style.width = '75%';
+                        progressFill.style.background = '#3b82f6';
+                        break;
+                    case 'completed':
+                        progressFill.style.width = '100%';
+                        progressFill.style.background = '#16a34a';
+                        break;
+                    case 'failed':
+                        progressFill.style.width = '100%';
+                        progressFill.style.background = '#ef4444';
+                        break;
+                    default:
+                        progressFill.style.width = '10%';
+                        progressFill.style.background = '#6b7280';
+                }
+            }
+
+            // Health check - IMPROVED
+            async function checkHealth() {
+                try {
+                    showMessage('Checking system health...', 'success');
+                    
+                    const response = await fetch(`${API_BASE}/health`);
+                    const data = await response.json();
+                    
+                    let statusHtml = `
+                        <h4>🏥 System Health Check</h4>
+                        <p><strong>Overall Status:</strong> ${data.status}</p>
+                        <p><strong>Uptime:</strong> ${(data.uptime / 3600).toFixed(2)} hours</p>
+                        <p><strong>Version:</strong> ${data.version}</p>
+                        <p><strong>Kafka Integration:</strong> ${data.kafka_integration}</p>
+                        <p><strong>Active Jobs:</strong> ${data.active_jobs}</p>
+                        <h5>Service Status:</h5>
+                    `;
+                    
+                    for (const [service, status] of Object.entries(data.services)) {
+                        const emoji = status === 'healthy' ? '✅' : status.includes('unavailable') ? '⚠️' : '❌';
+                        statusHtml += `<p>${emoji} <strong>${service}:</strong> ${status}</p>`;
+                    }
+                    
+                    showMessage(statusHtml, data.status === 'healthy' ? 'success' : 'error');
+                    
+                } catch (error) {
+                    showMessage(`Health check failed: ${error.message}`, 'error');
+                }
+            }
+
+            // Get queue status - IMPROVED  
+            async function getQueueStatus() {
+                try {
+                    showMessage('Loading queue status...', 'success');
+                    
+                    const response = await fetch(`${API_BASE}/queue/status`);
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+                    
+                    const data = await response.json();
+                    
+                    let queueHtml = `
+                        <h4>📊 Kafka Queue Status</h4>
+                        <p><strong>Consumer Status:</strong> ${data.consumer_status}</p>
+                        <p><strong>Active Jobs:</strong> ${data.active_jobs}</p>
+                        <h5>Queue Sizes by Priority:</h5>
+                        <p>🔴 Normal Priority: ${data.normal_priority} jobs</p>
+                        <p>🟡 High Priority: ${data.high_priority} jobs</p>
+                        <p>🟢 Urgent Priority: ${data.urgent} jobs</p>
+                    `;
+                    
+                    showMessage(queueHtml, 'success');
+                    
+                } catch (error) {
+                    console.error('Queue status error:', error);
+                    showMessage(`Failed to get queue status: ${error.message}`, 'error');
+                }
+            }
+
+
+            async function getActiveJobs() {
+                    try {
+                        showMessage('Loading active jobs...', 'success');
+                        
+                        const response = await fetch(`${API_BASE}/jobs/active`);
+                        
+                        if (!response.ok) {
+                            throw new Error(`HTTP ${response.status}`);
+                        }
+                        
+                        const data = await response.json();
+                        
+                        let jobsHtml = `
+                            <h4>📋 Active Jobs (${data.total_active_jobs})</h4>
+                        `;
+                        
+                        if (data.total_active_jobs === 0) {
+                            jobsHtml += '<p>No jobs found in Redis</p>';
+                        } else {
+                            for (const [jobId, jobInfo] of Object.entries(data.jobs)) {
+                                const statusEmoji = {
+                                    'queued': '⏳',
+                                    'processing': '🔄',
+                                    'completed': '✅',
+                                    'failed': '❌'
+                                }[jobInfo.status] || '❓';
+                                
+                                jobsHtml += `
+                                    <p>${statusEmoji} <strong>${jobId.substring(0, 8)}...</strong> - 
+                                    Video: ${jobInfo.video_id} - 
+                                    Status: ${jobInfo.status} - 
+                                    Priority: ${jobInfo.priority} - 
+                                    ${jobInfo.submitted_at ? new Date(jobInfo.submitted_at).toLocaleString() : 'No timestamp'}</p>
+                                `;
+                            }
+                        }
+                        
+                        showMessage(jobsHtml, 'success');
+                        
+                    } catch (error) {
+                        console.error('Active jobs error:', error);
+                        showMessage(`Failed to get active jobs: ${error.message}`, 'error');
+                    }
+                }
+            // Utility functions - IMPROVED
+            function showMessage(message, type) {
+                hideMessage();
+                
+                const messageDiv = document.createElement('div');
+                messageDiv.className = type;
+                messageDiv.innerHTML = message;
+                
+                document.querySelector('.main-content').appendChild(messageDiv);
+                
+                // Auto-hide success messages after 5 seconds
+                if (type === 'success') {
+                    setTimeout(() => {
+                        hideMessage();
+                    }, 5000);
+                }
+            }
+
+            function hideMessage() {
+                const existingMessages = document.querySelectorAll('.error, .success');
+                existingMessages.forEach(msg => msg.remove());
+            }
+
+            // Tab switching
+            function showTab(tabName) {
+                // Remove active class from all tabs and content
+                document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+                
+                // Add active class to clicked tab and corresponding content
+                event.target.classList.add('active');
+                document.getElementById(tabName + '-tab').classList.add('active');
+            }
+
+            // Cleanup on page unload
+            window.addEventListener('beforeunload', function() {
+                stopPolling();
+            });
+
+            // Initialize page
+            window.addEventListener('load', function() {
+                console.log('🎬 Babbl Labs Frontend Ready');
+                console.log('📤 Kafka Integration: Enabled');
+                console.log('🔗 API Base URL:', API_BASE);
+            });
+
+            // Debug helper
+            window.debugKafkaFlow = function() {
+                console.log('=== KAFKA FLOW DEBUG ===');
+                console.log('Current Job ID:', currentJobId);
+                console.log('Polling Active:', !!pollingInterval);
+                console.log('API Base:', API_BASE);
+            };
+    </script>
+</body>
+</html>
