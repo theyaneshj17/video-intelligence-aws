@@ -1,4 +1,4 @@
--- Babbl Labs Data Pipeline Schema - FIXED VERSION
+
 -- This version handles all constraint issues properly
 
 -- Video metadata table
